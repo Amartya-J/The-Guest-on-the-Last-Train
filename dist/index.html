@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080c13">
+  <meta name="description" content="A short psychological horror game aboard a train that remembers every death.">
+  <title>The Guest on the Last Train</title>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link rel="stylesheet" href="style.css?v=2">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">✦</span> THE GUEST <span class="muted">/ LAST TRAIN</span></div>
+      <button id="soundButton" class="btn btn-ghost btn-sm sound-button" type="button" aria-label="Turn sound off">SOUND ON</button>
+    </header>
+
+    <main class="shell">
+      <section class="game-frame" aria-label="Game scene">
+        <canvas id="game" width="960" height="540" aria-label="Side view of a dark train car"></canvas>
+        <div class="grain" aria-hidden="true"></div>
+
+        <div id="hud" class="hud hidden">
+          <div class="hud-top">
+            <div class="eyebrow" id="carLabel">CAR 01 / THE WAKE</div>
+            <div class="ride" id="rideLabel">RIDE 01</div>
+          </div>
+          <div class="hud-bottom">
+            <div class="meter-group">
+              <div class="meter-label"><span>FLASH CHARGE</span><span id="chargeText">100%</span></div>
+              <progress id="chargeBar" class="progress" value="100" max="100" aria-label="Flash charge"></progress>
+            </div>
+            <div class="danger-wrap"><span class="meter-label">DANGER</span><div class="danger-pips" id="dangerPips" aria-label="Danger level"><i></i><i></i><i></i><i></i></div></div>
+          </div>
+          <div id="prompt" class="prompt hidden"></div>
+          <div id="toast" class="toast-message hidden" role="status"></div>
+          <button id="journalButton" class="btn btn-ghost btn-sm journal-button" type="button">JOURNAL <span id="clueCount">0/3</span> <kbd>J</kbd></button>
+        </div>
+
+        <div id="titleScreen" class="screen title-screen">
+          <div class="title-inner">
+            <p class="kicker">A ONE-WAY JOURNEY · 11:47 PM</p>
+            <h1>THE GUEST<br><em>ON THE LAST TRAIN</em></h1>
+            <p class="premise">You wake on the last train home. It never stops.<br>Someone you buried is waiting in the next car.</p>
+            <button id="startButton" class="btn btn-primary main-button" type="button">BOARD THE TRAIN <span>→</span></button>
+            <div class="controls"><span><kbd>A</kbd><kbd>D</kbd> MOVE</span><span><kbd>F</kbd> / <kbd>SPACE</kbd> FLASH</span><span><kbd>E</kbd> INSPECT</span><span><kbd>W</kbd> HIDE</span><span><kbd>J</kbd> JOURNAL</span></div>
+          </div>
+          <div class="title-footer"><span>HEADPHONES RECOMMENDED</span><span>THE TRAIN REMEMBERS</span></div>
+        </div>
+
+        <div id="clueScreen" class="screen modal-screen hidden" role="dialog" aria-modal="true" aria-labelledby="clueTitle">
+          <div class="paper-panel"><p class="kicker" id="clueKicker">FOUND OBJECT</p><h2 id="clueTitle"></h2><p id="clueBody"></p><button id="clueClose" class="btn btn-primary" type="button">KEEP MOVING <span>→</span></button></div>
+        </div>
+
+        <div id="journalScreen" class="screen modal-screen hidden" role="dialog" aria-modal="true" aria-labelledby="journalTitle">
+          <div class="paper-panel journal-panel"><p class="kicker">WHAT YOU REMEMBER</p><h2 id="journalTitle">Evidence</h2><div id="journalEntries"></div><button id="journalClose" class="btn" type="button">BACK TO THE TRAIN</button></div>
+        </div>
+
+        <div id="deathScreen" class="screen result-screen death-screen hidden"><p class="kicker">THE TRAIN REMEMBERS</p><h2>YOU MISSED<br>YOUR STOP.</h2><p id="deathMessage"></p><button id="restartButton" class="btn btn-primary main-button" type="button">WAKE AGAIN <span>↺</span></button><p class="small-note">A detail has changed. Look closely.</p></div>
+
+        <div id="endingScreen" class="screen result-screen ending-screen hidden"><p class="kicker">END OF THE LINE</p><h2>THE DOORS<br>FINALLY OPEN.</h2><p>At 11:47, you say Mara's name into the intercom. The train exhales. For the first time, the doors lead somewhere other than back inside.</p><p class="ending-line">You step off before she can ask you to stay.</p><button id="playAgainButton" class="btn btn-primary main-button" type="button">RIDE AGAIN <span>↺</span></button></div>
+      </section>
+      <div class="underbar"><span>LAST SERVICE · NO STOPS SCHEDULED</span><span id="hintText">FLASH THE DARK. TRUST WHAT CHANGES.</span></div>
+    </main>
+  </div>
+  <script src="game.js?v=4"></script>
+</body>
+</html>
