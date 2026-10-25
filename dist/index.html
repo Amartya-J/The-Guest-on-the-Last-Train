@@ -4,11 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#080c13">
-  <meta name="description" content="A short psychological horror game aboard a train that remembers every death.">
+  <meta name="description" content="A short psychological horror game aboard a train that remembers every death. Capture what should not be there.">
   <title>The Guest on the Last Train</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23080d14'/%3E%3Cpath d='M32 5 38 26 59 32 38 38 32 59 26 38 5 32 26 26Z' fill='%23dcb980'/%3E%3C/svg%3E">
   <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
   <div id="app">
@@ -25,6 +26,7 @@
         <div id="hud" class="hud hidden">
           <div class="hud-top">
             <div class="eyebrow" id="carLabel">CAR 01 / THE WAKE</div>
+            <div class="negative-status" id="negativeStatus" aria-live="polite">NEGATIVE EMPTY</div>
             <div class="ride" id="rideLabel">RIDE 01</div>
           </div>
           <div class="hud-bottom">
@@ -40,12 +42,14 @@
         </div>
 
         <div id="titleScreen" class="screen title-screen">
+          <div class="ticket-art" aria-hidden="true"><span>METRO · NIGHT SERVICE</span><strong>11:47</strong><span>ONE WAY / NO RETURN</span><div class="ticket-line"></div><small>KEEP THIS SIDE TOWARD THE LIGHT</small></div>
           <div class="title-inner">
             <p class="kicker">A ONE-WAY JOURNEY · 11:47 PM</p>
             <h1>THE GUEST<br><em>ON THE LAST TRAIN</em></h1>
             <p class="premise">You wake on the last train home. It never stops.<br>Someone you buried is waiting in the next car.</p>
             <button id="startButton" class="btn btn-primary main-button" type="button">BOARD THE TRAIN <span>→</span></button>
-            <div class="controls"><span><kbd>A</kbd><kbd>D</kbd> MOVE</span><span><kbd>F</kbd> / <kbd>SPACE</kbd> FLASH</span><span><kbd>E</kbd> INSPECT</span><span><kbd>W</kbd> HIDE</span><span><kbd>J</kbd> JOURNAL</span></div>
+            <div class="controls"><span><kbd>A</kbd><kbd>D</kbd> MOVE</span><span><kbd>F</kbd> / <kbd>SPACE</kbd> FLASH</span><span><kbd>E</kbd> INSPECT</span><span><kbd>W</kbd> HIDE</span><span><kbd>R</kbd> PROJECT NEGATIVE</span><span><kbd>J</kbd> JOURNAL</span></div>
+            <p class="feature-note">A flash can catch her image. An afterimage can make her follow the wrong you.</p>
           </div>
           <div class="title-footer"><span>HEADPHONES RECOMMENDED</span><span>THE TRAIN REMEMBERS</span></div>
         </div>
@@ -65,6 +69,6 @@
       <div class="underbar"><span>LAST SERVICE · NO STOPS SCHEDULED</span><span id="hintText">FLASH THE DARK. TRUST WHAT CHANGES.</span></div>
     </main>
   </div>
-  <script src="game.js?v=4"></script>
+  <script src="game.js?v=6"></script>
 </body>
 </html>

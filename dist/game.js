@@ -4,7 +4,7 @@
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height, WORLD = 2280;
   const $ = id => document.getElementById(id);
-  const ui = Object.fromEntries(['titleScreen','hud','clueScreen','journalScreen','deathScreen','endingScreen','chargeBar','chargeText','dangerPips','carLabel','rideLabel','prompt','toast','clueCount','hintText','soundButton'].map(id => [id,$(id)]));
+  const ui = Object.fromEntries(['titleScreen','hud','clueScreen','journalScreen','deathScreen','endingScreen','chargeBar','chargeText','dangerPips','carLabel','rideLabel','prompt','toast','clueCount','hintText','soundButton','negativeStatus'].map(id => [id,$(id)]));
   const clues = [
     {x:520, name:'One-way ticket', kicker:'CAR 01 · UNDER A SEAT', body:'11:47 PM. Two passengers. One fare paid.\n\nOn the back, in your handwriting: “Mara, wait for me at the end of the line.” The date is the night she died.'},
     {x:1120, name:'The torn note', kicker:'CAR 02 · ON THE FLOOR', body:'A page from Mara’s notebook: “The train repeats the moment we refuse to remember. Light makes it stop moving. Darkness lets it choose where to stand.”\n\nBelow that: “You left before the doors opened.”'},
@@ -16,8 +16,8 @@
   memory.clues = Array.isArray(memory.clues) ? memory.clues.filter(x => Number.isInteger(x) && x >= 0 && x < 3) : [];
   let muted = false;
   let audio, master, humTimer = 0;
-  let scene = 'title', paused = false, previousScene = 'playing';
-  let keys = new Set(), player, friend, charge, flashTime=0, flashPin=0, danger=0, cameraX=0, toastTime=0, gameTime=0, shake=0, revealed=new Set(), revealTime=0;
+  let scene = 'title', previousScene = 'playing';
+  let keys = new Set(), player, friend, charge, flashTime=0, flashPin=0, danger=0, cameraX=0, toastTime=0, gameTime=0, shake=0, revealed=new Set(), revealTime=0, negative=false, echo=null, stepBeat=0;
   let last = performance.now();
   const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
   const distance = (a,b) => Math.abs(a-b);
@@ -46,6 +46,9 @@
     if (kind==='death') {tone(160,1.2,'sawtooth',.38,.15);tone(43,1.4,'triangle',.3,.65);}
     if (kind==='danger') tone(65,.2,'triangle',.2,.7);
     if (kind==='door') {tone(130,.6,'sawtooth',.2,.45);tone(55,.8,'triangle',.15,.75);}
+    if (kind==='capture') {tone(840,.12,'square',.1,.85);setTimeout(()=>tone(1260,.35,'sine',.14,.72),100);}
+    if (kind==='echo') {tone(390,.5,'triangle',.18,.45);setTimeout(()=>tone(610,.65,'sine',.1,.52),100);}
+    if (kind==='step') tone(80,.045,'triangle',.035,.8);
     if (kind==='end') [0,240,500,800].forEach((ms,i)=>setTimeout(()=>tone([220,330,440,660][i],1.2,'sine',.15,1.02),ms));
   }
   function setSound(on) {
@@ -56,12 +59,13 @@
 
   function resetRide() {
     player={x:155,hidden:false,step:0};
-    friend={x:memory.deaths>=2?1460:1740,dir:-1,wait:12,shown:0};
-    charge=100;flashTime=0;flashPin=0;danger=0;cameraX=0;toastTime=0;gameTime=0;shake=0;revealed=new Set();revealTime=0;
-    scene='playing';paused=false;keys.clear();
+    friend={x:memory.deaths>=2?1460:1740,wait:12,shown:0};
+    charge=100;flashTime=0;flashPin=0;danger=0;cameraX=0;toastTime=0;gameTime=0;shake=0;revealed=new Set();revealTime=0;negative=false;echo=null;stepBeat=0;humTimer=0;
+    scene='playing';keys.clear();
     ['titleScreen','clueScreen','journalScreen','deathScreen','endingScreen'].forEach(id=>visible(ui[id],false));visible(ui.hud,true);
     ui.rideLabel.textContent=`RIDE ${String(memory.deaths+1).padStart(2,'0')}`;
     ui.clueCount.textContent=`${memory.clues.length}/3`;
+    updateNegativeStatus();
     ui.hintText.textContent=memory.deaths===0?'FLASH THE DARK. TRUST WHAT CHANGES.':memory.deaths===1?'THE WINDOW KNOWS WHAT YOU LEFT BEHIND.':'THE SERVICE DOOR IS OPEN. FIND THE TRUTH.';
     if (memory.deaths) showToast(memory.deaths===1?'Something is written on the window.':'The train has changed again.',4);
   }
@@ -91,7 +95,25 @@
     charge-=38;flashTime=.62;flashPin=2.2;danger=Math.max(0,danger-.4);shake=4;cue('flash');
     clues.forEach((c,i)=>{if (distance(player.x,c.x)<430 && (i!==2 || memory.deaths>=2)) revealed.add(i);});
     revealTime=5;
-    if (distance(player.x,friend.x)<460) {friend.shown=.9;friend.wait=Math.max(friend.wait,2.2);if (memory.deaths>=3) friend.x=clamp(friend.x+(friend.x>player.x?90:-90),0,WORLD);}
+    if (distance(player.x,friend.x)<460) {
+      friend.shown=.9;friend.wait=Math.max(friend.wait,2.2);
+      if (!negative) {negative=true;showToast('NEGATIVE DEVELOPED · R PROJECTS THE AFTERIMAGE',2.8);cue('capture');}
+      if (memory.deaths>=3) friend.x=clamp(friend.x+(friend.x>player.x?90:-90),0,WORLD);
+    }
+    updateNegativeStatus();
+  }
+  function projectNegative() {
+    if (scene!=='playing') return;
+    if (echo) {showToast('The afterimage is still burning.',1.5);return;}
+    if (!negative) {showToast('Flash Mara to capture a negative first.',2);return;}
+    echo={x:player.x,ttl:5.5};negative=false;danger=Math.max(0,danger-.28);
+    flashPin=Math.max(flashPin,2);friend.wait=Math.max(friend.wait,2);cue('echo');
+    showToast('She follows the image. Move past her now.',2.2);updateNegativeStatus();
+  }
+  function updateNegativeStatus() {
+    ui.negativeStatus.textContent=echo?`AFTERIMAGE ${Math.ceil(echo.ttl)}s`:negative?'NEGATIVE READY · R PROJECT':'NEGATIVE EMPTY';
+    ui.negativeStatus.classList.toggle('ready',negative);
+    ui.negativeStatus.classList.toggle('active',!!echo);
   }
   function hide() {
     if (scene!=='playing') return;
@@ -119,13 +141,13 @@
   function die() {
     scene='death';visible(ui.deathScreen,true);visible(ui.prompt,false);cue('death');
     memory.deaths++;persist();
-    text('deathMessage',memory.deaths===1?'A message appears where the window was blank.':memory.deaths===2?'Somewhere ahead, a service lock clicks open.':memory.deaths===3?'She flinches from the camera now.':'The carriage shifts. You can still remember the way out.');
+    text('deathMessage',memory.deaths===1?'A message appears where the window was blank.':memory.deaths===2?'Somewhere ahead, a service lock clicks open.':memory.deaths===3?'She flinches from the camera now.':'Another mark appears beneath the writing on the window.');
     shake=11;
   }
   document.addEventListener('keydown',e=>{
     const k=e.key.toLowerCase();
     if ([' ','arrowleft','arrowright','arrowup','arrowdown'].includes(k)) e.preventDefault();
-    if (e.repeat && ['f',' ','e','w','arrowup','j'].includes(k)) return;
+    if (e.repeat && ['f',' ','e','w','arrowup','j','r'].includes(k)) return;
     if (k==='j') {journal();return;}
     if (scene==='title' && (k==='enter'||k===' ')) {start();return;}
     if (scene==='death' && (k==='enter'||k===' ')) {start();return;}
@@ -136,6 +158,7 @@
     if (k==='f'||k===' ') flash();
     if (k==='e') interact();
     if (k==='w'||k==='arrowup') hide();
+    if (k==='r') projectNegative();
   });
   document.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
   window.addEventListener('blur',()=>keys.clear());
@@ -143,25 +166,32 @@
   function update(dt) {
     if (scene!=='playing') return;
     gameTime+=dt;charge=clamp(charge+dt*7.3,0,100);flashTime=Math.max(0,flashTime-dt);flashPin=Math.max(0,flashPin-dt);friend.shown=Math.max(0,friend.shown-dt);shake=Math.max(0,shake-dt*18);
+    if (echo) {echo.ttl-=dt;if(echo.ttl<=0)echo=null;updateNegativeStatus();}
     if (toastTime>0) {toastTime-=dt;if(toastTime<=0)visible(ui.toast,false);}
     if (revealTime>0) revealTime-=dt; else revealed.clear();
     if (!player.hidden) {
       let dir=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0);
-      if(dir) {let next=clamp(player.x+dir*155*dt,55,WORLD-55);if(memory.deaths<2 && player.x<1825 && next>1825)next=1825;if(memory.deaths<2 && player.x>1865 && next<1865)next=1865;player.x=next;player.step+=dt*10;}
+      if(dir) {
+        let next=clamp(player.x+dir*155*dt,55,WORLD-55);
+        if(memory.deaths<2 && next>1825)next=1825;
+        player.x=next;player.step+=dt*10;stepBeat+=dt;
+        if(stepBeat>.37){stepBeat=0;cue('step');}
+      } else stepBeat=.24;
     }
     if (friend.wait>0) friend.wait-=dt;
     else if (flashPin<=0) {
-      const toward=Math.sign(player.x-friend.x);
+      const toward=Math.sign((echo?echo.x:player.x)-friend.x);
       const speed=(memory.deaths>=3?50:memory.deaths>=2?68:64)*(player.hidden?.55:1);
       friend.x=clamp(friend.x+toward*speed*dt,75,WORLD-75);
-      if (player.hidden && distance(friend.x,player.x)<95) {friend.x+=toward===0?-1:-toward*speed*dt*1.7;friend.wait=.8;}
+      if (echo && distance(friend.x,echo.x)<48)friend.wait=.25;
+      if (player.hidden && !echo && distance(friend.x,player.x)<95) {friend.x+=toward===0?-1:-toward*speed*dt*1.7;friend.wait=.8;}
     }
     const gap=distance(player.x,friend.x);
-    const exposed=!player.hidden && flashPin<=0;
+    const exposed=!player.hidden && flashPin<=0 && !echo;
     let threat=exposed?clamp((310-gap)/310,0,1):0;
     danger=clamp(danger+(threat*(gap<85?1.5:.55)-(!threat?.38:0))*dt,0,1);
     if (!player.hidden && gap<47 && flashPin<=0) danger=Math.min(1,danger+dt*2.1);
-    if(danger>=1)die();
+    if(danger>=1){die();return;}
     ui.chargeBar.value=Math.round(charge);ui.chargeText.textContent=`${Math.round(charge)}%`;
     [...ui.dangerPips.children].forEach((pip,i)=>pip.classList.toggle('on',danger>(i*.25+.03)));
     const car=Math.min(3,Math.floor(player.x/760)+1);
@@ -188,23 +218,45 @@
     for(let car=0;car<3;car++){
       const ox=car*760-cameraX;
       if(ox>W+150||ox+760<-150)continue;
+      const accent=['#c9a472','#77a9a8','#b67c73'][car];
       rect(ox,0,760,62,'#09121a');rect(ox,62,760,11,'#3a4a50');rect(ox,74,760,21,'#172833');
       rect(ox,95,760,249,car===1?'#263541':'#293844');rect(ox,344,760,38,'#394b50');
       rect(ox,382,760,158,'#151d24');rect(ox,388,760,12,'#455057');rect(ox,493,760,8,'#495259');
+      rect(ox,84,760,4,accent);rect(ox,292,760,3,'#31444c');
+      for(const lx of [180,556]){
+        const x=ox+lx;
+        rect(x-67,45,134,14,'#4c5c61');rect(x-61,48,122,6,'#bbc5bb');
+        if(Math.sin(gameTime*8+car*3+lx)<-.91)rect(x-59,49,118,3,'#58666b');
+        rect(x-2,59,4,20,'#82918d');
+      }
+      for(const hx of [91,296,502,704]){
+        const x=ox+hx;rect(x,74,3,47,'#899999');rect(x-11,117,25,4,accent);rect(x-13,121,4,14,accent);rect(x+10,121,4,14,accent);
+      }
       for(let x=ox+0;x<ox+760;x+=38){line(x,403,x+21,490,'#23313a');line(x,502,x,540,'#101820');}
       for(const wx of [115,335,555]){
         const x=ox+wx;
         rect(x,119,128,154,'#0b1824');rect(x+5,124,118,143,'#12283a');
         for(let b=0;b<7;b++){const bx=x+8+b*19+((gameTime*8)%19);rect(bx,190+(b%3)*11,9,77-(b%3)*11,'#1b3441');rect(bx,198+(b%3)*11,3,3,'#b28666');}
+        for(let rain=0;rain<5;rain++){const rx=x+13+((rain*29+car*13)%106),ry=129+((rain*43+Math.floor(gameTime*19))%117);rect(rx,ry,1,10,'#a9b7b425');}
+        rect(x+47,124,2,143,'#aec0bb18');rect(x+78,124,1,143,'#aec0bb22');
         rect(x,119,6,154,'#74868a');rect(x+122,119,6,154,'#74868a');rect(x,267,128,7,'#667980');
       }
+      rect(ox+42,135,53,79,'#17252c');rect(ox+46,139,45,71,accent);
+      rect(ox+52,147,34,3,'#1b2529');rect(ox+52,155,26,2,'#1b2529');
+      label(['LAST','NIGHT','END'][car],ox+51,176,'#17232a',9);
+      label(['SERVICE','LINE','OF LINE'][car],ox+51,189,'#17232a',7);
+      rect(ox+270,88,186,26,'#111f27');rect(ox+274,92,178,18,'#31444b');
+      label(['NO STOPS SCHEDULED','DO NOT LOOK BACK','EMERGENCY EXIT'][car],ox+280,105,accent,10);
       for(const sx of [275,690]){
         const x=ox+sx;
         rect(x-55,304,94,77,'#253844');rect(x-58,312,6,76,'#698087');rect(x-50,322,82,53,'#3d5057');rect(x-52,374,96,16,'#1a282f');rect(x-44,390,6,34,'#5b6b6f');rect(x+32,390,6,34,'#5b6b6f');
-        rect(x-48,329,74,3,'#647d83');
+        rect(x-48,329,74,3,'#647d83');rect(x-46,335,35,19,'#516873');rect(x-6,335,30,19,'#49616a');
+        rect(x-52,397,97,2,'#9daaa44b');
       }
       for(const px of [56,430]){const x=ox+px;rect(x,78,5,303,'#52676d');rect(x-11,94,27,5,'#7a8786');rect(x-9,101,23,31,'#253a46');}
-      rect(ox+742,96,18,287,'#0c151d');rect(ox+735,112,6,254,'#677b7e');
+      rect(ox+742,96,18,287,'#0c151d');rect(ox+735,112,6,254,'#677b7e');rect(ox+749,156,5,138,'#394e56');
+      for(const rivet of [107,284,364]){rect(ox+7,rivet,3,3,accent);rect(ox+747,rivet,3,3,accent);}
+      for(let f=0;f<5;f++)rect(ox+f*162+25,502+(f%2)*7,104,2,'#83908a17');
       label(`0${car+1}`,ox+30,109,'#bba884',14);
     }
     // A barely legible message appears after the first death.
@@ -244,6 +296,18 @@
       rect(px+9,y+23,11,14,'#101a22');rect(px+10,y+24,8,7,'#9caaa7');
     }
   }
+  function drawEcho() {
+    if(!echo)return;
+    const x=echo.x-cameraX;
+    if(x<-65||x>W+65)return;
+    const pulse=.55+.25*Math.sin(gameTime*13);
+    ctx.save();ctx.globalAlpha=pulse*Math.min(1,echo.ttl/.8);
+    person(echo.x);
+    rect(x-21,258,3,132,'#b2e6db');rect(x+18,258,3,132,'#b2e6db');
+    rect(x-21,257,42,3,'#d5efe7');rect(x-21,389,42,3,'#d5efe7');
+    for(let y=266;y<389;y+=17)rect(x-28+Math.sin(gameTime*10+y)*3,y,56,1,'#97e4d066');
+    ctx.restore();
+  }
   function render() {
     ctx.save();
     if(scene==='title')cameraX=480;
@@ -251,6 +315,7 @@
     if(shake>0)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake*.6);
     train();
     if(player&&scene!=='title'){
+      drawEcho();
       if(player.hidden){const x=player.x-cameraX;rect(x-10,344,20,39,'#706357');rect(x-7,331,14,16,'#c3a489');}
       else person(player.x);
       if(flashTime>0||friend.shown>0||distance(player.x,friend.x)<140)person(friend.x,true);
@@ -269,6 +334,13 @@
         rect(0,0,W,H,g);
       }
       if(danger>.2){ctx.fillStyle=`rgba(110,8,18,${danger*.2})`;ctx.fillRect(0,0,W,H);}
+      if(echo){
+        const x=echo.x-cameraX;
+        ctx.globalAlpha=.48+.22*Math.sin(gameTime*12);
+        line(x-17,264,x-17,297,'#b8f0df',2);line(x+18,264,x+18,297,'#b8f0df',2);
+        line(x-17,264,x-4,264,'#b8f0df',2);line(x+5,264,x+18,264,'#b8f0df',2);
+        label('ECHO',x-15,252,'#b8f0df',10);ctx.globalAlpha=1;
+      }
     } else rect(0,0,W,H,'#060a1190');
     for(let i=0;i<12;i++){const y=(i*47+Math.floor(gameTime*16))%H;rect(0,y,W,1,'#ffffff07');}
     ctx.restore();

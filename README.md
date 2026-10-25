@@ -8,6 +8,8 @@ Open `dist/index.html` in a browser, or serve the `dist` directory with any stat
 
 The current private deployment is [playable here](https://last-train-guest-20261025-aj.amar12356.chatgpt.site).
 
-Move with **A/D** or **←/→**, flash with **F** or **Space**, inspect with **E**, hide near a seat with **W** or **↑**, and open the journal with **J**. The sound toggle works from every screen. Progress is saved in this browser.
+Source is backed up in the private [GitHub repository](https://github.com/Amartya-J/The-Guest-on-the-Last-Train). The game is static: `dist/` contains everything needed to serve it.
+
+Move with **A/D** or **←/→**, flash with **F** or **Space**, inspect with **E**, hide near a seat with **W** or **↑**, project a captured negative with **R**, and open the journal with **J**. Flash Mara while she is nearby to capture her image; projecting it makes her pursue the afterimage for a few seconds. The sound toggle works from every screen. Progress is saved in this browser.
 
 The build plan is in [BUILD_PLAN.md](BUILD_PLAN.md); the original scope is in [MVP_PROMPT.md](MVP_PROMPT.md).

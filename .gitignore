@@ -1,4 +1,5 @@
 node_modules/
+.idea/
 site-source/
 build/
 coverage/

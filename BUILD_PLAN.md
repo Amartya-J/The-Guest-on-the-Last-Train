@@ -32,3 +32,10 @@ Ship a self-contained, playable browser game with a complete beginning, repeatab
 - The train is a side-view 2D corridor. Movement and interaction stay on one plane so the flash, pursuit, and hiding are immediately legible.
 - The first two deaths are part of the intended mystery progression. The game explains this through changed scenery rather than requiring a hidden combination.
 - No account, server, or downloaded art is required.
+
+## Post-MVP expansion
+
+- Add **double exposure**: flashing Mara captures one negative, and `R` projects it as a temporary decoy. The friend follows its light for a few seconds; direct contact remains dangerous. The HUD must clearly show when a negative is ready and when it is active.
+- Deepen the train art with lit carriage fixtures, platform reflections, route signage, and distinct color cues for each car. Improve the title treatment and HUD without obscuring play.
+- Fix the service-door boundary so it stays locked until the second death. Re-test a complete run, the new decoy, all overlays, mute, and a narrow viewport before publishing.
+- Sync the deployed Site and GitHub repository from the tested source, then remove generated checkout files and unrelated IDE artifacts from Git tracking.
